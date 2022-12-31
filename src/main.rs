@@ -1,6 +1,28 @@
-use std::fs;
+use std::fs; 
+use std::collections::HashMap;
+
+fn count_bits(number: i16) -> i16{
+    // Count non-zero bits in the last significant digits of a byte
+    let mut count = 0i16;
+    for house in 0..9{
+        count += (number >> house) & 1i16; // Will add one if the bit at that house is 1
+    };
+    count
+}
+
+fn value_counts(group: &[i16]) -> HashMap<i16, i8> {
+    // Counts how many time each number appers in
+    // a row, column or square
+
+    let mut v_counts: HashMap<i16, i8> = HashMap::new();
+    for value in group{
+        v_counts.entry(*value).and_modify(|counter| *counter += 1i8).or_insert(1i8);
+    };
+    v_counts
+}
 
 fn main() {
+    
     // Read the file contents
     let file_content = fs::read_to_string("src/test-sudoku.txt").expect("Reading...");
     println!("{file_content}");
@@ -46,8 +68,15 @@ fn main() {
         println!("Found number {} - encoding as {:0>9b}", _char, 1 << _char.to_digit(10).unwrap() - 1);
         game[pos] = 1; // Set to one
         game[pos] <<= _char.to_digit(10).unwrap() -1; // Shift to the left the correspondign number of bits
+
+        // println!("It has {} bits.\n", count_bits(game[pos]));
         pos += 1;
     };
     
     println!("After loading the file:\n{game:?}");
+
+    // Value counts of the first row
+    let first_row = &game[0..10];
+    let ve = value_counts(first_row);
+    println!("{ve:?}");
 }
