@@ -40,31 +40,34 @@ fn evolve(mut game: [i16; 81], group: [usize; 9]) -> [i16; 81]{
 }
 
 fn render(game: [i16; 81]){
-    let mut counter = 0; 
+    let mut counter = 0;
     let mut l_counter = 0;
-    for i in game{
+    print!(" ");
+    for i in game {
+        counter += 1;
         if count_bits(i) == 1i8{
             for n in 1i16..10 {
                if 1i16 << (n - 1) == i{
-                    print!(" {n} ");
-                } 
-            }
+                    print!("{n} ");
+                }; 
+            };
         }else {
-            print!("   ");
+            print!(". ");
         };
-        counter += 1;
+
         if counter == 3 || counter == 6 {
-            print!("|");
+            print!("| ");
         };
 
         if counter == 9 {
-            print!("\n");
+            print!("\n ");
             counter = 0;
             l_counter += 1;
+
             if l_counter == 3 || l_counter == 6 {
-                println!("---------|---------|---------");
-            };
-        };
+                print!("------|-------|-------\n ");
+            }
+        }
     }
 }
 
@@ -93,23 +96,17 @@ fn main() {
 
     // Loop through the file
     let mut pos = 0;
-    let mut whitespace_counter = 0;
     for _char in file_content.chars() {
-        // Three whitespaces in a row should move the pos
-        if _char == ' ' || _char == '\n' {
-            whitespace_counter += 1;
-            if whitespace_counter == 3{
-                pos += 1;
-                whitespace_counter = 0;
-            };
-            continue;
-        };
-        whitespace_counter = 0;
-
         // If it is an aesthetic character, ignore
-        if _char == '|' || _char == '-'{
+        if _char == '|' || _char == '-' || _char == ' ' || _char == '\n'{
             continue;
         };
+        
+        // If it's the null charr (.), move the pos;
+        if _char == '.' {
+            pos += 1;
+            continue;
+        }
 
         // If it's a numeric character, encode it to binary
         println!("Found number {} - encoding as {:0>9b}", _char, 1 << _char.to_digit(10).unwrap() - 1);
@@ -154,6 +151,7 @@ fn main() {
             game = evolve(game, slice);
         };
     };
-    println!("After first round of solving:\n");
+
+    println!("After first round of evolution: ");
     render(game);
 }
