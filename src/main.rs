@@ -71,6 +71,18 @@ fn render(game: [i16; 81]){
     }
 }
 
+fn measure_entropy(game: [i16; 81]) -> i16{
+    // Measures how many positive bits are still in the entire array
+    // Game is solved when this value is 81
+
+    let mut entropy = 0i16;
+    for house in game {
+        entropy += count_bits(house) as i16;
+    };
+    return entropy
+}
+
+
 fn main() {
     
     // Read the file contents
@@ -92,7 +104,6 @@ fn main() {
 
     // Create the game array
     let mut game: [i16; 81] = [0b111_111_111; 81]; // Initially, assume all values are possible
-    println!("Initialized game:\n{game:?}");
 
     // Loop through the file
     let mut pos = 0;
@@ -101,18 +112,14 @@ fn main() {
         if _char == '|' || _char == '-' || _char == ' ' || _char == '\n'{
             continue;
         };
-        
         // If it's the null charr (.), move the pos;
         if _char == '.' {
             pos += 1;
             continue;
         }
-
         // If it's a numeric character, encode it to binary
-        println!("Found number {} - encoding as {:0>9b}", _char, 1 << _char.to_digit(10).unwrap() - 1);
         game[pos] = 1; // Set to one
         game[pos] <<= _char.to_digit(10).unwrap() -1; // Shift to the left the correspondign number of bits
-
         // println!("It has {} bits.\n", count_bits(game[pos]));
         pos += 1;
     };
@@ -145,13 +152,33 @@ fn main() {
             [8, 17, 26, 35, 44, 53, 62, 71, 80]
         ]
     ];
-    // The problem I have now is how to define references to the different groups of house
-    for part in partitions {
-        for slice in part{
-            game = evolve(game, slice);
-        };
-    };
+    
+    // Let's start solving...
+    let mut entropy = measure_entropy(game);
+    let mut entropy_buffer: i16;
+    println!("Initial entropy: {entropy}");
 
-    println!("After first round of evolution: ");
+    let mut step_counter = 0;
+    while entropy > 81i16 { // While it is still not solved...
+
+        // Execute a calculation step
+        step_counter += 1;
+        for part in partitions {
+            for slice in part{
+                game = evolve(game, slice);
+            };
+        };
+        // Measure the new entropy
+        entropy_buffer = measure_entropy(game);
+        println!("Entropy after step {step_counter}: {entropy_buffer}");
+        // Check if algorythm isn't stuck
+        if entropy_buffer == entropy {
+            println!("No reduction in entropy. We're stuck.");
+            break;
+        };
+        entropy = entropy_buffer;
+    }
+
+    println!("Final state:");
     render(game);
 }
