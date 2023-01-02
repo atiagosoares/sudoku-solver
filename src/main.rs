@@ -1,5 +1,6 @@
 use std::fs; 
 use std::collections::HashMap;
+use std::time::{Instant, Duration};
 
 fn count_bits(number: i16) -> i8{
     // Count non-zero bits in the last significant digits of a byte
@@ -13,28 +14,19 @@ fn count_bits(number: i16) -> i8{
 fn evolve(mut game: [i16; 81], group: [usize; 9]) -> [i16; 81]{
 
     // Count the values of each value in the group
-    let mut value_counts: HashMap<i16, i8> = HashMap::new();
-    for idx in group{
-        value_counts.entry(game[idx])
-            .and_modify(|counter| *counter += 1i8)
-            .or_insert(1i8);
+    let mut mask = 0b111_111_111i16;
+    let mut neg_mask = 0b111_111_111i16;
+    // Calculate the mask
+    for house in group{
+        mask &= game[house];
+        neg_mask &= !game[house];
     };
     
-    // Evaluate if the value count matches it's bitcount
-    let mut x: Vec<i16> = vec![];
-    for (k, v) in value_counts{
-        if count_bits(k) == v{
-            x.push(k);
-        }
-    };
-    
-    // Loop through the group one more time, removing x
-    for idx in group{
-        for i in &x{
-            if game[idx] != *i{
-                game[idx] &= !i;
-            }
-        }
+    // Get the overlap
+    let overlap = mask & neg_mask; // This represents the digits that have both ones and zeros
+    // Apply the mask
+    for house in game {
+        game[house] &= mask;
     };
     return game
 }
@@ -86,7 +78,7 @@ fn measure_entropy(game: [i16; 81]) -> i16{
 fn main() {
     
     // Read the file contents
-    let file_content = fs::read_to_string("src/expert1.txt").expect("Reading...");
+    let file_content = fs::read_to_string("src/hard1.txt").expect("Reading...");
     println!("{file_content}");
     
     // Parse the file content into a sudoku struck
@@ -165,6 +157,7 @@ fn main() {
     ];
     
     // Let's start solving...
+    let now = Instant::now();
     let mut entropy = measure_entropy(game);
     let mut entropy_buffer: i16;
     println!("Initial entropy: {entropy}");
@@ -192,4 +185,5 @@ fn main() {
 
     println!("Final state:");
     render(game);
+    println!("Elapsed {}us", now.elapsed().as_micros());
 }
