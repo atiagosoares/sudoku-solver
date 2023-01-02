@@ -1,5 +1,5 @@
 use std::fs; 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::time::{Instant, Duration};
 
 fn count_bits(number: i16) -> i8{
@@ -13,23 +13,95 @@ fn count_bits(number: i16) -> i8{
 
 fn evolve(mut game: [i16; 81], group: [usize; 9]) -> [i16; 81]{
 
+    // STRATEGY 1
+    // Check if there is a number of n houses that can only be the same n values
+    // -> The remaining houses can't any of those values
+
     // Count the values of each value in the group
-    let mut mask = 0b111_111_111i16;
-    let mut neg_mask = 0b111_111_111i16;
-    // Calculate the mask
-    for house in group{
-        mask &= game[house];
-        neg_mask &= !game[house];
+    let mut value_counts: HashMap<i16, i8> = HashMap::new();
+    for idx in group{
+        value_counts.entry(game[idx])
+            .and_modify(|counter| *counter += 1i8)
+            .or_insert(1i8);
     };
     
-    // Get the overlap
-    let overlap = mask & neg_mask; // This represents the digits that have both ones and zeros
-    // Apply the mask
-    for house in game {
-        game[house] &= mask;
+    // Evaluate if the value count matches it's bitcount
+    let mut x: Vec<i16> = vec![];
+    for (k, v) in value_counts{
+        if count_bits(k) == v{
+            x.push(k);
+        }
+    };
+    
+    // Loop through the group one more time, removing x
+    for idx in group{
+        for i in &x{
+            if game[idx] != *i{
+                game[idx] &= !i;
+            }
+        }
+    };
+
+    // STRATEGY 2
+    // Check if there a house that is the only one in the group that can that value
+    // ... I'll just loop through bits...
+    let mut bit_counter: i8;
+    for b in 0i16..10{
+        let _byte = 1i16 << b;
+        
+        bit_counter = 0;
+        for house in group{
+            if game[house] & _byte != 0 {
+                bit_counter += 1;
+                if bit_counter > 1 {
+                    break;
+                };
+            };
+        };
+
+        if bit_counter == 1 {
+            // Look for the house with that value and change it
+            for house in group {
+                if game[house] & _byte != 0{
+                    game[house] = _byte;
+                };
+            };
+        };
     };
     return game
+
 }
+
+fn proliferate_from_intersection(mut game: [i16; 81], group_a: [usize; 9], group_b: [usize; 9]) -> [i16; 81] {
+
+    // Determine if a set of values must be in an intersection between two groups
+    // most notably between the intersection between a square and a row or column
+    
+    // Find the intersection between the groups
+    let ha = HashSet::from(group_a);
+    let hb = HashSet::from(group_b);
+    let a_diff = ha.difference(&hb);
+    let b_diff = hb.difference(&ha);
+    let diff = ha.symmetric_difference(&hb);
+
+    // Determine which values must be in the intersection according to each group
+    let mut not_in_a_diff = 0i16;
+    for house in a_diff{
+       not_in_a_diff |= game[*house]; 
+    };
+
+    let mut not_in_b_diff = 0i16;
+    for house in b_diff {
+        not_in_b_diff |= game[*house];
+    };
+    
+    // Proliferate those restriction across the groups
+    let in_intersec = not_in_b_diff & not_in_a_diff;
+    for house in diff {
+        game[*house] &= in_intersec;
+    };
+    return game
+} 
 
 fn render(game: [i16; 81]){
     let mut counter = 0;
@@ -78,7 +150,7 @@ fn measure_entropy(game: [i16; 81]) -> i16{
 fn main() {
     
     // Read the file contents
-    let file_content = fs::read_to_string("src/hard1.txt").expect("Reading...");
+    let file_content = fs::read_to_string("src/expert1.txt").expect("Reading...");
     println!("{file_content}");
     
     // Parse the file content into a sudoku struck
@@ -172,6 +244,16 @@ fn main() {
                 game = evolve(game, slice);
             };
         };
+
+        // Execute the intersection thingy...
+        for square in partitions[2] {
+            for row in partitions[0] {
+                game = proliferate_from_intersection(game, square, row);
+            };
+            for column in partitions[1]{
+                game = proliferate_from_intersection(game, square, column);
+            };
+        };
         // Measure the new entropy
         entropy_buffer = measure_entropy(game);
         println!("Entropy after step {step_counter}: {entropy_buffer}");
@@ -186,4 +268,7 @@ fn main() {
     println!("Final state:");
     render(game);
     println!("Elapsed {}us", now.elapsed().as_micros());
+
+    // Test intersection
+    game = proliferate_from_intersection(game, partitions[0][0], partitions[2][0]);
 }
