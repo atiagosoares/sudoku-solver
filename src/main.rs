@@ -1,6 +1,6 @@
 use std::fs; 
 use std::collections::{HashMap, HashSet};
-use std::time::{Instant, Duration};
+use std::time::Instant;
 
 fn count_bits(number: i16) -> i8{
     // Count non-zero bits in the last significant digits of a byte
@@ -43,27 +43,57 @@ fn evolve(mut game: [i16; 81], group: [usize; 9]) -> [i16; 81]{
     };
 
     // STRATEGY 2
-    // Check if there a house that is the only one in the group that can that value
-    // ... I'll just loop through bits...
-    let mut bit_counter: i8;
+    // Check for hidden singles and hidden pairs
+    // Step 1: count how many times each bit appears
+    let mut bit_counts: HashMap<i16, Vec<i16>> = HashMap::new();
     for b in 0i16..10{
-        let _byte = 1i16 << b;
-        
-        bit_counter = 0;
-        for house in group{
-            if game[house] & _byte != 0 {
-                bit_counter += 1;
-                if bit_counter > 1 {
-                    break;
+        let bit = 1i16 << b;
+        let mut count = 0i16;
+        for cell in group{
+            count += game[cell] & bit;
+        };
+        count /= bit;
+        bit_counts.entry(count)
+            .and_modify(|v| v.push(bit))
+            .or_insert(vec![bit]); 
+    };
+
+    // Step 2:
+    // bits with count = 1 are hidden singles
+    if bit_counts.contains_key(&1i16) {
+        for hidden_single in &bit_counts[&1i16] {
+            for cell in group{
+                if game[cell] & hidden_single == *hidden_single{
+                    game[cell] = *hidden_single;
                 };
             };
         };
+    };
+    
+    // Step 3:
+    // Bits with count = 2 are candidates for hidden pairs
+    if bit_counts.contains_key(&2i16){
+        for a in &bit_counts[&2i16]{
+            for b in &bit_counts[&2i16]{
 
-        if bit_counter == 1 {
-            // Look for the house with that value and change it
-            for house in group {
-                if game[house] & _byte != 0{
-                    game[house] = _byte;
+                if a == b {
+                    continue;
+                };
+                let mask = a | b;
+                // Check if the count of cells that include one of these elements is equal to 2
+                let mut k = 0i16;
+                for cell in group {
+                    if game[cell] & mask == mask {
+                        k += 1;
+                    }; // spaghetti
+                };
+                    
+                if k == 2i16 {
+                    for cell in group {
+                        if game[cell] & mask == mask {
+                            // game[cell] = mask;
+                        };
+                    };
                 };
             };
         };
@@ -150,7 +180,7 @@ fn measure_entropy(game: [i16; 81]) -> i16{
 fn main() {
     
     // Read the file contents
-    let file_content = fs::read_to_string("src/expert1.txt").expect("Reading...");
+    let file_content = fs::read_to_string("src/expert4.txt").expect("Reading...");
     println!("{file_content}");
     
     // Parse the file content into a sudoku struck
@@ -188,8 +218,8 @@ fn main() {
         pos += 1;
     };
     
-    println!("After loading the file:\n");
-    render(game);
+    // println!("After loading the file:\n");
+    // render(game);
 
     // Define the partitions (rows, columns and squares) of the games as arrays of indexes
     let partitions: [[[usize; 9]; 9]; 3] = [
