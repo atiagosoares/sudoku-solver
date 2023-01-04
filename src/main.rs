@@ -91,7 +91,7 @@ fn evolve(mut game: [i16; 81], group: [usize; 9]) -> [i16; 81]{
                 if k == 2i16 {
                     for cell in group {
                         if game[cell] & mask == mask {
-                            // game[cell] = mask;
+                            game[cell] = mask;
                         };
                     };
                 };
@@ -162,6 +162,32 @@ fn render(game: [i16; 81]){
                 print!("------|-------|-------\n ");
             }
         }
+    }
+}
+
+fn render_marks(game: [i16; 81]){
+    
+    let mut cell_counter = 0;
+    let mut line_counter = 0;
+    for cell in game{
+        cell_counter += 1;
+        let mut bit_marks: String = "".to_owned();
+        for number in 0..9 {
+            let bit = 1 << number;
+            if cell & bit > 0 {
+                bit_marks.push_str(&(number + 1).to_string());
+            };
+        };
+        print!(" {bit_marks:^9} ");
+        if cell_counter == 3 || cell_counter == 6 {print!("|")};
+        if cell_counter == 9 {
+            print!("\n ");
+            cell_counter = 0;
+            line_counter += 1;
+            if line_counter == 3 || line_counter == 6{
+                print!("{:->99}\n ", ""); // Too hacky, maybe?
+            }
+        };
     }
 }
 
@@ -276,14 +302,15 @@ fn main() {
         };
 
         // Execute the intersection thingy...
-        for square in partitions[2] {
-            for row in partitions[0] {
-                game = proliferate_from_intersection(game, square, row);
-            };
-            for column in partitions[1]{
-                game = proliferate_from_intersection(game, square, column);
-            };
-        };
+        // for square in partitions[2] {
+        //     for row in partitions[0] {
+        //         game = proliferate_from_intersection(game, square, row);
+        //     };
+        //     for column in partitions[1]{
+        //         game = proliferate_from_intersection(game, square, column);
+        //     };
+        // };
+
         // Measure the new entropy
         entropy_buffer = measure_entropy(game);
         println!("Entropy after step {step_counter}: {entropy_buffer}");
@@ -297,8 +324,7 @@ fn main() {
 
     println!("Final state:");
     render(game);
+    print!("\n\n ");
+    render_marks(game);
     println!("Elapsed {}us", now.elapsed().as_micros());
-
-    // Test intersection
-    game = proliferate_from_intersection(game, partitions[0][0], partitions[2][0]);
 }
