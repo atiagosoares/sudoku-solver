@@ -206,7 +206,7 @@ fn measure_entropy(game: [i16; 81]) -> i16{
 fn main() {
     
     // Read the file contents
-    let file_content = fs::read_to_string("src/expert4.txt").expect("Reading...");
+    let file_content = fs::read_to_string("src/expert5.txt").expect("Reading...");
     println!("{file_content}");
     
     // Parse the file content into a sudoku struck
@@ -245,7 +245,7 @@ fn main() {
     };
     
     // println!("After loading the file:\n");
-    // render(game);
+    render(game);
 
     // Define the partitions (rows, columns and squares) of the games as arrays of indexes
     let partitions: [[[usize; 9]; 9]; 3] = [
@@ -302,14 +302,14 @@ fn main() {
         };
 
         // Execute the intersection thingy...
-        // for square in partitions[2] {
-        //     for row in partitions[0] {
-        //         game = proliferate_from_intersection(game, square, row);
-        //     };
-        //     for column in partitions[1]{
-        //         game = proliferate_from_intersection(game, square, column);
-        //     };
-        // };
+        for square in partitions[2] {
+            for row in partitions[0] {
+                game = proliferate_from_intersection(game, square, row);
+            };
+            for column in partitions[1]{
+                game = proliferate_from_intersection(game, square, column);
+            };
+        };
 
         // Measure the new entropy
         entropy_buffer = measure_entropy(game);
