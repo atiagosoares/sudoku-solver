@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::{fs, vec}; 
 use std::collections::{HashMap, HashSet};
 use std::time::Instant;
@@ -10,23 +11,47 @@ use combinations::Combinations;
 struct Group{
     indexes: Vec<usize>,
     mask: i16,
+    game: Game
 }
 
 // The partition represents one way of dividing a board
 // For example, the rows are one way to partition a board, the blocks are another one
 struct Partition{
-    groups: Vec<Group>
+    groups: Vec<Group>,
+    game: Game
 }
 
 // The game object.
 // Contais current state of cells and existing partitions
 struct Game{
-    values: [i16; 81],
+    values: Vec<i16>,
     partitions: Vec<Partition>
 }
+
 impl Game{
-    fn new() -> Self{
+    fn initialize_empty() -> Self{
         Game{values: [0b111_111_111; 81], partitions: vec![]}
+    }
+
+    fn load_file(file_path: String) -> Self{
+
+        let file_content = fs::read_to_string(file_path).expect("Reading...");
+
+        let game_values: Vec<i16> = vec![];
+        // Loop through the file
+        for _char in file_content.chars() {
+            // If it is an aesthetic character, ignore
+            if _char == '|' || _char == '-' || _char == ' ' || _char == '\n'{
+                continue;
+            };
+            // If it's the null charr (.), move the pos;
+            if _char == '.' {
+                game_values.push(0b111_111_111);
+            }
+            // If it's a numeric character, encode it to binary
+            game_values.push(1 << (_char.to_digit(10).unwrap() -1));
+        };
+        return Game{values: game_values, partitions: vec![]};
     }
 }
 
@@ -235,31 +260,9 @@ fn measure_entropy(game: [i16; 81]) -> i16{
 fn main() {
     
     // Read the file contents
-    let file_content = fs::read_to_string("src/expert5.txt").expect("Reading...");
-    println!("{file_content}");
-
-    let game = Game::new().values;
-    // Loop through the file
-    let mut pos = 0;
-    for _char in file_content.chars() {
-        // If it is an aesthetic character, ignore
-        if _char == '|' || _char == '-' || _char == ' ' || _char == '\n'{
-            continue;
-        };
-        // If it's the null charr (.), move the pos;
-        if _char == '.' {
-            pos += 1;
-            continue;
-        }
-        // If it's a numeric character, encode it to binary
-        game[pos] = 1; // Set to one
-        game[pos] <<= _char.to_digit(10).unwrap() -1; // Shift to the left the correspondign number of bits
-        // println!("It has {} bits.\n", count_bits(game[pos]));
-        pos += 1;
-    };
-    
-    // println!("After loading the file:\n");
-    render(game);
+    let file_path = String::from_str("expoert5.txt").expect("");
+    let game = Game::load_file(file_path); 
+    render(game.values);
 
     // Define the partitions (rows, columns and squares) of the games as arrays of indexes
     
