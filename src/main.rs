@@ -1,6 +1,35 @@
-use std::fs; 
+use std::{fs, vec}; 
 use std::collections::{HashMap, HashSet};
 use std::time::Instant;
+use combinations::Combinations;
+
+
+// The group is a collection of n cells that may contains n values
+// For example: an empty or is a 9-sized group that contains the numbers 1 to 9
+//              a cell with the number 4 is a 1-sized group that coitains the number 4
+struct Group{
+    indexes: Vec<usize>,
+    mask: i16,
+}
+
+// The partition represents one way of dividing a board
+// For example, the rows are one way to partition a board, the blocks are another one
+struct Partition{
+    groups: Vec<Group>
+}
+
+// The game object.
+// Contais current state of cells and existing partitions
+struct Game{
+    values: [i16; 81],
+    partitions: Vec<Partition>
+}
+impl Game{
+    fn new() -> Self{
+        Game{values: [0b111_111_111; 81], partitions: vec![]}
+    }
+}
+
 
 fn count_bits(number: i16) -> i8{
     // Count non-zero bits in the last significant digits of a byte
@@ -208,23 +237,8 @@ fn main() {
     // Read the file contents
     let file_content = fs::read_to_string("src/expert5.txt").expect("Reading...");
     println!("{file_content}");
-    
-    // Parse the file content into a sudoku struck
-    /* The file will be encoded as follows:
-* Will be an array<i16> with 81 elements
-    * Each element will represent one house of the sudoku game
-    * Each bit will represent what number that house may be. Ex:
-    * is 1 -> 000_000_001 ; is 4 > 000_001_000
-    * is empty, may be any number: 111_111_111
-    * may be 3 or 9 > 100_000_100
-    * 
-    * The game will be complete when:
-    * All the houses have only one bit == 1
-    */
 
-    // Create the game array
-    let mut game: [i16; 81] = [0b111_111_111; 81]; // Initially, assume all values are possible
-
+    let game = Game::new().values;
     // Loop through the file
     let mut pos = 0;
     for _char in file_content.chars() {
@@ -248,41 +262,6 @@ fn main() {
     render(game);
 
     // Define the partitions (rows, columns and squares) of the games as arrays of indexes
-    let partitions: [[[usize; 9]; 9]; 3] = [
-        [ // Rows
-            [0, 1, 2, 3, 4, 5, 6, 7, 8],
-            [9, 10, 11, 12, 13, 14, 15, 16, 17],
-            [18, 19, 20, 21, 22, 23, 24, 25, 26],
-            [27, 28, 29, 30, 31, 32, 33, 34, 35],
-            [36, 37, 38, 39, 40, 41, 42, 43, 44],
-            [45, 46, 47, 48, 49, 50, 51, 52, 53],
-            [54, 55, 56, 57, 58, 59, 60, 61, 62],
-            [63, 64, 65, 66, 67, 68, 69, 70, 71],
-            [72, 73, 74, 75, 76, 77, 78, 79, 80]
-        ],
-        [ // Columns
-            [0, 9, 18, 27, 36, 45, 54, 63, 72],
-            [1, 10, 19, 28, 37, 46, 55, 64, 73],
-            [2, 11, 20, 29, 38, 47, 56, 65, 74],
-            [3, 12, 21, 30, 39, 48, 57, 66, 75],
-            [4, 13, 22, 31, 40, 49, 58, 67, 76],
-            [5, 14, 23, 32, 41, 50, 59, 68, 77],
-            [6, 15, 24, 33, 42, 51, 60, 69, 78],
-            [7, 16, 25, 34, 43, 52, 61, 70, 79],
-            [8, 17, 26, 35, 44, 53, 62, 71, 80]
-        ],
-        [ // Squares
-            [0, 1, 2, 9, 10, 11, 18, 19, 20],
-            [3, 4, 5, 12, 13, 14, 21, 22, 23],
-            [6, 7, 8, 15, 16, 17, 24, 25, 26],
-            [27, 28, 29, 36, 37, 38, 45, 46, 47],
-            [30, 31, 32, 39, 40, 41, 48, 49, 50],
-            [33, 34, 35, 42, 43, 44, 51, 52, 53],
-            [54, 55, 56, 63, 64, 65, 72, 73, 74],
-            [57, 58, 59, 66, 67, 68, 75, 76, 77],
-            [60, 61, 62, 69, 70, 71, 78, 79, 80]
-        ]
-    ];
     
     // Let's start solving...
     let now = Instant::now();
