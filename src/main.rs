@@ -29,15 +29,15 @@ struct Game{
 }
 
 impl Game{
-    fn initialize_empty() -> Self{
-        Game{values: [0b111_111_111; 81], partitions: vec![]}
+    fn initialize() -> Self{
+        Game{values: vec![0b111_111_111; 81], partitions: vec![]}
     }
 
     fn load_file(file_path: String) -> Self{
 
         let file_content = fs::read_to_string(file_path).expect("Reading...");
 
-        let game_values: Vec<i16> = vec![];
+        let mut game_values: Vec<i16> = vec![];
         // Loop through the file
         for _char in file_content.chars() {
             // If it is an aesthetic character, ignore
@@ -52,6 +52,63 @@ impl Game{
             game_values.push(1 << (_char.to_digit(10).unwrap() -1));
         };
         return Game{values: game_values, partitions: vec![]};
+    }
+
+    fn render(self: &Self){
+        let mut counter = 0;
+        let mut l_counter = 0;
+        print!(" ");
+        for &i in &self.values {
+            counter += 1;
+            if count_bits(i) == 1i8{
+                for n in 1i16..10 {
+                   if 1i16 << (n - 1) == i{
+                        print!("{n} ");
+                    }; 
+                };
+            }else {
+                print!(". ");
+            };
+
+            if counter == 3 || counter == 6 {
+                print!("| ");
+            };
+
+            if counter == 9 {
+                print!("\n ");
+                counter = 0;
+                l_counter += 1;
+
+                if l_counter == 3 || l_counter == 6 {
+                    print!("------|-------|-------\n ");
+                }
+            }
+        }
+    }
+
+    fn render_marks(self: &Self){
+        let mut cell_counter = 0;
+        let mut line_counter = 0;
+        for &cell in &self.values{
+            cell_counter += 1;
+            let mut bit_marks: String = "".to_owned();
+            for number in 0..9 {
+                let bit = 1 << number;
+                if cell & bit > 0 {
+                    bit_marks.push_str(&(number + 1).to_string());
+                };
+            };
+            print!(" {bit_marks:^9} ");
+            if cell_counter == 3 || cell_counter == 6 {print!("|")};
+            if cell_counter == 9 {
+                print!("\n ");
+                cell_counter = 0;
+                line_counter += 1;
+                if line_counter == 3 || line_counter == 6{
+                    print!("{:->99}\n ", ""); // Too hacky, maybe?
+                }
+            };
+        }
     }
 }
 
@@ -187,63 +244,7 @@ fn proliferate_from_intersection(mut game: [i16; 81], group_a: [usize; 9], group
     return game
 } 
 
-fn render(game: [i16; 81]){
-    let mut counter = 0;
-    let mut l_counter = 0;
-    print!(" ");
-    for i in game {
-        counter += 1;
-        if count_bits(i) == 1i8{
-            for n in 1i16..10 {
-               if 1i16 << (n - 1) == i{
-                    print!("{n} ");
-                }; 
-            };
-        }else {
-            print!(". ");
-        };
 
-        if counter == 3 || counter == 6 {
-            print!("| ");
-        };
-
-        if counter == 9 {
-            print!("\n ");
-            counter = 0;
-            l_counter += 1;
-
-            if l_counter == 3 || l_counter == 6 {
-                print!("------|-------|-------\n ");
-            }
-        }
-    }
-}
-
-fn render_marks(game: [i16; 81]){
-    
-    let mut cell_counter = 0;
-    let mut line_counter = 0;
-    for cell in game{
-        cell_counter += 1;
-        let mut bit_marks: String = "".to_owned();
-        for number in 0..9 {
-            let bit = 1 << number;
-            if cell & bit > 0 {
-                bit_marks.push_str(&(number + 1).to_string());
-            };
-        };
-        print!(" {bit_marks:^9} ");
-        if cell_counter == 3 || cell_counter == 6 {print!("|")};
-        if cell_counter == 9 {
-            print!("\n ");
-            cell_counter = 0;
-            line_counter += 1;
-            if line_counter == 3 || line_counter == 6{
-                print!("{:->99}\n ", ""); // Too hacky, maybe?
-            }
-        };
-    }
-}
 
 fn measure_entropy(game: [i16; 81]) -> i16{
     // Measures how many positive bits are still in the entire array
@@ -262,51 +263,53 @@ fn main() {
     // Read the file contents
     let file_path = String::from_str("expoert5.txt").expect("");
     let game = Game::load_file(file_path); 
-    render(game.values);
+    game.render();
+    println!("");
+    game.render_marks();
 
     // Define the partitions (rows, columns and squares) of the games as arrays of indexes
     
-    // Let's start solving...
-    let now = Instant::now();
-    let mut entropy = measure_entropy(game);
-    let mut entropy_buffer: i16;
-    println!("Initial entropy: {entropy}");
+    // // Let's start solving...
+    // let now = Instant::now();
+    // let mut entropy = measure_entropy(game);
+    // let mut entropy_buffer: i16;
+    // println!("Initial entropy: {entropy}");
 
-    let mut step_counter = 0;
-    while entropy > 81i16 { // While it is still not solved...
+    // let mut step_counter = 0;
+    // while entropy > 81i16 { // While it is still not solved...
 
-        // Execute a calculation step
-        step_counter += 1;
-        for part in partitions {
-            for slice in part{
-                game = evolve(game, slice);
-            };
-        };
+    //     // Execute a calculation step
+    //     step_counter += 1;
+    //     for part in partitions {
+    //         for slice in part{
+    //             game = evolve(game, slice);
+    //         };
+    //     };
 
-        // Execute the intersection thingy...
-        for square in partitions[2] {
-            for row in partitions[0] {
-                game = proliferate_from_intersection(game, square, row);
-            };
-            for column in partitions[1]{
-                game = proliferate_from_intersection(game, square, column);
-            };
-        };
+    //     // Execute the intersection thingy...
+    //     for square in partitions[2] {
+    //         for row in partitions[0] {
+    //             game = proliferate_from_intersection(game, square, row);
+    //         };
+    //         for column in partitions[1]{
+    //             game = proliferate_from_intersection(game, square, column);
+    //         };
+    //     };
 
-        // Measure the new entropy
-        entropy_buffer = measure_entropy(game);
-        println!("Entropy after step {step_counter}: {entropy_buffer}");
-        // Check if algorythm isn't stuck
-        if entropy_buffer == entropy {
-            println!("No reduction in entropy. We're stuck.");
-            break;
-        };
-        entropy = entropy_buffer;
-    }
+    //     // Measure the new entropy
+    //     entropy_buffer = measure_entropy(game);
+    //     println!("Entropy after step {step_counter}: {entropy_buffer}");
+    //     // Check if algorythm isn't stuck
+    //     if entropy_buffer == entropy {
+    //         println!("No reduction in entropy. We're stuck.");
+    //         break;
+    //     };
+    //     entropy = entropy_buffer;
+    // }
 
-    println!("Final state:");
-    render(game);
-    print!("\n\n ");
-    render_marks(game);
-    println!("Elapsed {}us", now.elapsed().as_micros());
+    // println!("Final state:");
+    // render(game);
+    // print!("\n\n ");
+    // render_marks(game);
+    // println!("Elapsed {}us", now.elapsed().as_micros());
 }
