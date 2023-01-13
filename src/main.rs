@@ -8,23 +8,22 @@ use combinations::Combinations;
 // The group is a collection of n cells that may contains n values
 // For example: an empty or is a 9-sized group that contains the numbers 1 to 9
 //              a cell with the number 4 is a 1-sized group that coitains the number 4
+#[derive(Debug)]
 struct Group{
-    cells: Vec<&'a i16>,
-    mask: i16,
-    game: Game
+    indexes: Vec<i16>,
+    mask: i16
 }
 
 // The partition represents one way of dividing a board
 // For example, the rows are one way to partition a board, the blocks are another one
 struct Partition{
     groups: Vec<Group>,
-    game: Game
 }
 
 // The game object.
 // Contais current state of cells and existing partitions
 struct Game{
-    values: [i16; 81],
+    values: Vec<i16>,
     partitions: Vec<Partition>
 }
 
@@ -111,7 +110,25 @@ impl Game{
             };
         }
     }
+
+    fn initialize_partitions(self: &mut Self) {
+        // Creates the initial rows, columns and block partitions
+        //
+        let mut row_groups: Vec<Group> = vec![];
+        for row_num in 0..9{
+            let mut group_indexes: Vec<i16> = vec![];
+            for cell_num in 0..9{
+                group_indexes.push(9*row_num + cell_num);
+            }
+            row_groups.push(
+                Group{indexes:group_indexes, mask: 0b111_111_111}
+            )
+        }
+        self.partitions.push(Partition { groups: row_groups });
+    }
+
 }
+
 
 
 fn count_bits(number: i16) -> i8{
@@ -263,12 +280,20 @@ fn main() {
     
     // Read the file contents
     let file_path = String::from_str("src/expert5.txt").expect("");
-    let game = Game::load_file(file_path); 
+    let mut game = Game::load_file(file_path); 
     game.render();
     println!("");
     game.render_marks();
 
     // Define the partitions (rows, columns and squares) of the games as arrays of indexes
+    game.initialize_partitions();
+
+    for partition in game.partitions {
+        for group in partition.groups {
+            println!("{:?}", group.indexes);
+        };
+        print!("\n\n");
+    }
     
     // // Let's start solving...
     // let now = Instant::now();
