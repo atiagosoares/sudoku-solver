@@ -9,7 +9,7 @@ use combinations::Combinations;
 // For example: an empty or is a 9-sized group that contains the numbers 1 to 9
 //              a cell with the number 4 is a 1-sized group that coitains the number 4
 struct Group{
-    indexes: Vec<usize>,
+    cells: Vec<&'a i16>,
     mask: i16,
     game: Game
 }
@@ -24,7 +24,7 @@ struct Partition{
 // The game object.
 // Contais current state of cells and existing partitions
 struct Game{
-    values: Vec<i16>,
+    values: [i16; 81],
     partitions: Vec<Partition>
 }
 
@@ -47,6 +47,7 @@ impl Game{
             // If it's the null charr (.), move the pos;
             if _char == '.' {
                 game_values.push(0b111_111_111);
+                continue;
             }
             // If it's a numeric character, encode it to binary
             game_values.push(1 << (_char.to_digit(10).unwrap() -1));
@@ -261,7 +262,7 @@ fn measure_entropy(game: [i16; 81]) -> i16{
 fn main() {
     
     // Read the file contents
-    let file_path = String::from_str("expoert5.txt").expect("");
+    let file_path = String::from_str("src/expert5.txt").expect("");
     let game = Game::load_file(file_path); 
     game.render();
     println!("");
