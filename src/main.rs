@@ -117,12 +117,15 @@ impl Game{
         // Rows and columns
         let mut row_groups: Vec<Group> = vec![];
         let mut col_groups: Vec<Group> = vec![];
+        let mut block_groups: Vec<Group> = vec![];
         for i in 0..9{
             let mut row_group_indexes: Vec<i16> = vec![];
             let mut col_group_indexes: Vec<i16> = vec![]; 
+            let mut block_group_indexes: Vec<i16> = vec![];
             for j in 0..9{
                 row_group_indexes.push(9*i + j); 
                 col_group_indexes.push(i + 9*j);
+                block_group_indexes.push(3*i + 18*(i/3) + 9*(j/3) + j%3);
             }
             row_groups.push(
                 Group{indexes:row_group_indexes, mask: 0b111_111_111}
@@ -131,9 +134,14 @@ impl Game{
             col_groups.push(
                 Group{indexes:col_group_indexes, mask: 0b111_111_111}
             );
+
+            block_groups.push(
+                Group{indexes:block_group_indexes, mask: 0b111_111_111}
+            );
         }
         self.partitions.push(Partition { groups: row_groups });
         self.partitions.push(Partition { groups: col_groups });
+        self.partitions.push(Partition { groups: block_groups });
     }
 
 }
