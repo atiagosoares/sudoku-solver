@@ -60,7 +60,7 @@ impl Game{
         print!(" ");
         for &i in &self.values {
             counter += 1;
-            if count_bits(i) == 1i8{
+            if count_bits(&i) == 1i8{
                 for n in 1i16..10 {
                    if 1i16 << (n - 1) == i{
                         print!("{n} ");
@@ -144,11 +144,21 @@ impl Game{
         self.partitions.push(Partition { groups: block_groups });
     }
 
+    fn measure_entropy(self: &Self) -> i16{
+        // Measures how many positive bits are still in the entire array
+        // Game is solved when this value is 81
+
+        let mut entropy = 0i16;
+        for house in &self.values {
+            entropy += count_bits(&house) as i16;
+        };
+        return entropy
+    }
 }
 
 
 
-fn count_bits(number: i16) -> i8{
+fn count_bits(number: &i16) -> i8{
     // Count non-zero bits in the last significant digits of a byte
     let mut count = 0i16;
     for house in 0..9{
@@ -157,96 +167,6 @@ fn count_bits(number: i16) -> i8{
     count as i8
 }
 
-fn evolve(mut game: [i16; 81], group: [usize; 9]) -> [i16; 81]{
-
-    // STRATEGY 1
-    // Check if there is a number of n houses that can only be the same n values
-    // -> The remaining houses can't any of those values
-
-    // Count the values of each value in the group
-    let mut value_counts: HashMap<i16, i8> = HashMap::new();
-    for idx in group{
-        value_counts.entry(game[idx])
-            .and_modify(|counter| *counter += 1i8)
-            .or_insert(1i8);
-    };
-    
-    // Evaluate if the value count matches it's bitcount
-    let mut x: Vec<i16> = vec![];
-    for (k, v) in value_counts{
-        if count_bits(k) == v{
-            x.push(k);
-        }
-    };
-    
-    // Loop through the group one more time, removing x
-    for idx in group{
-        for i in &x{
-            if game[idx] != *i{
-                game[idx] &= !i;
-            }
-        }
-    };
-
-    // STRATEGY 2
-    // Check for hidden singles and hidden pairs
-    // Step 1: count how many times each bit appears
-    let mut bit_counts: HashMap<i16, Vec<i16>> = HashMap::new();
-    for b in 0i16..10{
-        let bit = 1i16 << b;
-        let mut count = 0i16;
-        for cell in group{
-            count += game[cell] & bit;
-        };
-        count /= bit;
-        bit_counts.entry(count)
-            .and_modify(|v| v.push(bit))
-            .or_insert(vec![bit]); 
-    };
-
-    // Step 2:
-    // bits with count = 1 are hidden singles
-    if bit_counts.contains_key(&1i16) {
-        for hidden_single in &bit_counts[&1i16] {
-            for cell in group{
-                if game[cell] & hidden_single == *hidden_single{
-                    game[cell] = *hidden_single;
-                };
-            };
-        };
-    };
-    
-    // Step 3:
-    // Bits with count = 2 are candidates for hidden pairs
-    if bit_counts.contains_key(&2i16){
-        for a in &bit_counts[&2i16]{
-            for b in &bit_counts[&2i16]{
-
-                if a == b {
-                    continue;
-                };
-                let mask = a | b;
-                // Check if the count of cells that include one of these elements is equal to 2
-                let mut k = 0i16;
-                for cell in group {
-                    if game[cell] & mask == mask {
-                        k += 1;
-                    }; // spaghetti
-                };
-                    
-                if k == 2i16 {
-                    for cell in group {
-                        if game[cell] & mask == mask {
-                            game[cell] = mask;
-                        };
-                    };
-                };
-            };
-        };
-    };
-    return game
-
-}
 
 fn proliferate_from_intersection(mut game: [i16; 81], group_a: [usize; 9], group_b: [usize; 9]) -> [i16; 81] {
 
@@ -281,16 +201,6 @@ fn proliferate_from_intersection(mut game: [i16; 81], group_a: [usize; 9], group
 
 
 
-fn measure_entropy(game: [i16; 81]) -> i16{
-    // Measures how many positive bits are still in the entire array
-    // Game is solved when this value is 81
-
-    let mut entropy = 0i16;
-    for house in game {
-        entropy += count_bits(house) as i16;
-    };
-    return entropy
-}
 
 
 fn main() {
@@ -305,16 +215,16 @@ fn main() {
     // Define the partitions (rows, columns and squares) of the games as arrays of indexes
     game.initialize_partitions();
 
-    for partition in game.partitions {
-        for group in partition.groups {
+    for partition in &game.partitions {
+        for group in &partition.groups {
             println!("{:?}", group.indexes);
         };
         print!("\n\n");
     }
     
-    // // Let's start solving...
-    // let now = Instant::now();
-    // let mut entropy = measure_entropy(game);
+    // Let's start solving...
+    let now = Instant::now();
+    let mut entropy = game.measure_entropy();
     // let mut entropy_buffer: i16;
     // println!("Initial entropy: {entropy}");
 
